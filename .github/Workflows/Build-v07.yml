@@ -1,0 +1,46 @@
+name: Build ASCENSION v0.7
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Unzip ASCENSION
+        run: |
+          mkdir -p "$RUNNER_TEMP/ascension"
+          unzip -q "ASCENSION-v0.7.0-native-foundation.zip" -d "$RUNNER_TEMP/ascension"
+
+      - name: Build APK
+        working-directory: ${{ runner.temp }}/ascension/ASCENSION-v0.7.0-native-foundation
+        run: |
+          gradle testDebugUnitTest
+          gradle assembleDebug
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASCENSION-v0.7-debug
+          path: ${{ runner.temp }}/ascension/ASCENSION-v0.7.0-native-foundation/app/build/outputs/apk/debug/*.apk
